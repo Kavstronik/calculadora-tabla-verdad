@@ -23,8 +23,8 @@ Este proyecto es una herramienta interactiva desarrollada en Python utilizando *
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone [https://github.com/tu-usuario/nombre-del-repo.git](https://github.com/tu-usuario/nombre-del-repo.git)
-   cd nombre-del-repo
+   git clone https://github.com/Kavstronik/calculadora-tabla-verdad
+   cd Hola_Mundo
 
 
 ## 📦 Instalación y Uso Local
