@@ -8,6 +8,8 @@ Este proyecto es una herramienta interactiva desarrollada en Python utilizando *
 - **Clasificación Automática:** Determina si la expresión es una **Tautología**, **Contradicción** o **Contingencia**.
 - **Reporte PDF:** Descarga los resultados con limpieza automática de caracteres especiales.
 
+​"Se implementó un motor de detección de sub-expresiones mediante expresiones regulares para desglosar la tabla de verdad paso a paso, mejorando la trazabilidad del resultado final."
+
 ## 🛠️ Operadores Soportados
 | Operador | Símbolo |
 | :--- | :--- |

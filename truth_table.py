@@ -21,6 +21,7 @@ def normalizar_letras(texto):
     return texto
 
 def motor_traductor_robusto(t):
+    # Asegurar que no haya basura de símbolos antes de traducir
     t = t.replace('∧', ' and ').replace('^', ' and ')
     t = t.replace('∨', ' or ').replace(' v ', ' or ')
     t = t.replace('¬', ' not ').replace('~', ' not ')
@@ -29,7 +30,7 @@ def motor_traductor_robusto(t):
     t = t.replace('⊕', ' xor ').replace('⊻', ' xor ')
     
     while 'xor' in t: t = re.sub(r'(\(.*?\)|\bnot\s+\w+|\b\w+)\s*xor\s*(\(.*?\)|\bnot\s+\w+|\b\w+)', r'(\1 != \2)', t)
-    while 'nand' in t: t = re.sub(r'(\(.*?\)|\bnot\s+\w+|\b\w+)\s*nand\s*(\(.*?\)|\bnot\s+\w+|\b\w+)', r'(not (\1 and \2))', t)
+    while 'nand' in t: t = re.sub(r'(\(.*?\)|\bnot\s+\w+|\b\w+)\s*not\s*(\(.*?\)|\bnot\s+\w+|\b\w+)', r'(not (\1 and \2))', t)
     while 'nor' in t: t = re.sub(r'(\(.*?\)|\bnot\s+\w+|\b\w+)\s*nor\s*(\(.*?\)|\bnot\s+\w+|\b\w+)', r'(not (\1 or \2))', t)
     while '↔' in t or '<->' in t or '⇔' in t:
         t = re.sub(r'(\(.*?\)|\bnot\s+\w+|\b\w+)\s*(↔|<->|⇔)\s*(\(.*?\)|\bnot\s+\w+|\b\w+)', r'(\1 == \3)', t)
@@ -58,7 +59,7 @@ def exportar_a_pdf(df, expresion, clasificacion, nombre_archivo="tabla_verdad.pd
     pdf.ln(5)
 
     # Tabla
-    pdf.set_font("Arial", 'B', 9)
+    pdf.set_font("Arial", 'B', 8) # Un poco más pequeño para que entre el paso a paso
     col_width = 190 / len(df.columns)
     for col in df.columns:
         pdf.cell(col_width, 10, limpiar_para_pdf(col), border=1, align='C')
@@ -80,17 +81,39 @@ def generar_y_descargar(expresion):
     if not letras:
         return None, "Error: No se detectaron variables p, q o r.", None
 
+    # EXTRAER PASOS INTERMEDIOS (Lo nuevo)
+    # Busca contenido dentro de paréntesis
+    pasos_intermedios = re.findall(r'\(([^()]+)\)', t_limpio)
+    # Quitamos duplicados y variables sueltas
+    pasos_intermedios = [p for p in list(dict.fromkeys(pasos_intermedios)) if p not in letras]
+
     combinaciones = list(itertools.product([True, False], repeat=len(letras)))
     filas = []
 
     for combo in combinaciones:
         ctx = {l: v for l, v in zip(letras, combo)}
         ctx.update({'True': True, 'False': False})
+        
+        # 1. Variables principales
         fila = {l.upper(): (1 if v else 0) for l, v in zip(letras, combo)}
         
+        # 2. EVALUAR PASOS INTERMEDIOS
+        for paso in pasos_intermedios:
+            t_paso = motor_traductor_robusto(paso)
+            try:
+                res_p = eval(t_paso, {"__builtins__": None}, ctx)
+                fila[f"({paso.upper()})"] = 1 if bool(res_p) else 0
+            except:
+                fila[f"({paso.upper()})"] = "Err"
+
+        # 3. EVALUAR RESULTADO FINAL
         t_final = motor_traductor_robusto(t_limpio)
-        res_f = eval(t_final, {"__builtins__": None}, ctx)
-        fila['RESULTADO'] = 1 if bool(res_f) else 0
+        try:
+            res_f = eval(t_final, {"__builtins__": None}, ctx)
+            fila['RESULTADO'] = 1 if bool(res_f) else 0
+        except:
+            fila['RESULTADO'] = "Error"
+            
         filas.append(fila)
 
     df = pd.DataFrame(filas)
